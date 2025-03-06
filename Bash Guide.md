@@ -13,7 +13,7 @@ regex to grep all logs referencing IOC addresses, pipe to print status, dst ip, 
 grep -E '96\.126\.110\.74|103\.188\.234\.230|144\.48\.80\.122|167\.172\.77\.157|172\.105\.158\.219|198\.167\.193\.[0-9]{1,3}|200\.73\.8\.20' combinedlog.csv | awk -F',' '{print $3, $5, $29, $53, $77, $82}'
 ```
 
-For all traffic involving DEMONEXCH2, Awk all src IP, clean src column, exclude private IP's, sort and count occurrences
+For all traffic involving this server with 2 IP addreses, Awk all src IP, clean src column, exclude private IP's, sort and count occurrences
 ```bash
 grep -E '72\.175\.210\.194|172\.16\.16\.16' combinedlog.csv | awk -F',' '{print $56}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -Ev '^(10\..*|192\.168\..*|172\.(1[6-9]|2[0-9]|3[0-1])\..*)' | sort | uniq -c | sort
 ```
