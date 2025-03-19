@@ -4,10 +4,15 @@ import json
 import csv
 import argparse
 
+"""
+This Module is used to convert all .db files from the event logs directory of an XGFW into parsable .csv files. Each row 
+in tbllog is stored as a JSON object inside a single column. My solution to misalligned columns between .db files on export 
+requires we scan all .db files to collect a universal set of JSON keys. Returns a sorted list of unique column names. Super 
+time intensive but the best solution without a .db schema and should be flexible for any updated version changes.
+"""
+
 def get_all_column_names(directory_path):
-    """
-	This Module is used to convert all .db files from the event logs directory of an XGFW into parsable .csv files. Each row in tbllog is stored as a JSON object inside a single column. My solution to misalligned columns between .db files on export requires we scan all .db files to collect a universal set of JSON keys. Returns a sorted list of unique column names. Super time intensive but the best solution without a .db schema and should be flexible for any updated version changes.
-    """
+
     all_columns = set()
     total_files = len([f for f in os.listdir(directory_path) if f.endswith(".db")])
 
@@ -42,10 +47,10 @@ def get_all_column_names(directory_path):
 def export_data_to_csv(directory_path, universal_columns):
     """
     Exports data from each .db file to build the universal header.
-    Outputs all CSVs into a new 'Converted' directory inside the current working directory.
+    Outputs all CSVs into a new 'converted' directory inside the current working directory.
     """
-    output_dir = os.path.join(os.getcwd(), "Converted")
-    os.makedirs(output_dir, exist_ok=True)  # Create 'Converted' folder if it doesn't exist
+    output_dir = os.path.join(os.getcwd(), "converted")
+    os.makedirs(output_dir, exist_ok=True)  # Create 'converted' folder if it doesn't exist
 
     total_files = len([f for f in os.listdir(directory_path) if f.endswith(".db")])
     print(f"\nExporting {total_files} databases to CSV format in '{output_dir}'...\n")
@@ -87,6 +92,32 @@ def export_data_to_csv(directory_path, universal_columns):
             finally:
                 conn.close()
 
+def concatenate_csv_files(output_dir, output_filename="tapestry_logs.csv"):
+    """
+    Concatenates all CSV files in the output directory into a single CSV file.
+    """
+    output_path = os.path.join(output_dir, output_filename)
+    csv_files = [f for f in os.listdir(output_dir) if f.endswith(".csv")]
+
+    print(f"\nConcatenating {len(csv_files)} CSV files into '{output_filename}'...\n")
+
+    with open(output_path, "w", newline="") as outfile:
+        writer = csv.writer(outfile)
+        header_written = False
+
+        for index, csv_file in enumerate(csv_files, start=1):
+            print(f"[{index}/{len(csv_files)}] Processing: {csv_file}")
+            csv_path = os.path.join(output_dir, csv_file)
+            with open(csv_path, "r") as infile:
+                reader = csv.reader(infile)
+                for i, row in enumerate(reader):
+                    if i == 0 and header_written:
+                        continue  # Skip header row if already written
+                    writer.writerow(row)
+            header_written = True
+
+    print(f"✅ All CSV files concatenated into '{output_filename}'")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export data from SQLite .db files matching JSON field to CSV header.")
     parser.add_argument("directory_path", help="Path to the directory containing the .db files.")
@@ -98,4 +129,8 @@ if __name__ == "__main__":
     # Step 2: Export data to CSV using the universal column headers
     export_data_to_csv(args.directory_path, universal_columns)
 
-    print("\n Conversion complete! All CSV files are in the 'Converted' folder.\n")
+    # Step 3: Concatenate all CSV files into a single output file
+    output_dir = os.path.join(os.getcwd(), "converted")
+    concatenate_csv_files(output_dir)
+
+    print("\n Conversion complete! All CSV files are in the 'converted' folder.\n")
