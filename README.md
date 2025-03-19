@@ -17,6 +17,8 @@ Tapestry is a **command-line tool** designed to process and analyze different ty
   - Generate Summary Reports
   - Run All Matching Rules
 - **Automatic results organization**: Output files are stored in `Tapestry_Results`.
+- **Field-aware rule execution**: Automatically maps log fields to rule placeholders.
+- **Log extraction support**: Converts XGFW `.db` files into CSV format using `xgfw_unpacker.py`.
 
 ---
 
@@ -50,9 +52,15 @@ Upon running, Tapestry presents the following menu:
 4. Exit
 ```
 
+### Log Extraction
+
+Select **2. Log Extraction** to extract logs. Currently, only **XGFW Event Logs** are supported. Provide the directory containing `.db` files, and the tool will convert them into CSV format using `xgfw_unpacker.py`. The output is saved in a `converted` directory.
+
+### Log Analysis
+
 Select **1. Log Analysis** to proceed with log processing.
 
-### Log Type Selection
+#### Log Type Selection
 
 Choose the type of log files to analyze:
 
@@ -63,7 +71,7 @@ Choose the type of log files to analyze:
 4. General SSLVPN (Experimental)
 ```
 
-### Analysis Choice
+#### Analysis Choice
 
 Select how to analyze the logs:
 
@@ -73,7 +81,7 @@ Select how to analyze the logs:
 3. Identifier Search (WIP)
 ```
 
-### Specifying Log Directory
+#### Specifying Log Directory
 
 After selecting the log type and analysis choice, the tool will prompt:
 
@@ -81,7 +89,11 @@ After selecting the log type and analysis choice, the tool will prompt:
 Enter the target directory containing log files:
 ```
 
-Provide the full path to the directory containing logs.
+Provide the full path to the directory containing logs. For XGFW Event Logs, ensure the directory contains `tapestry_logs.csv`.
+
+#### Field Mapping for Rules
+
+For XGFW Event Logs, the tool automatically maps log fields to rule placeholders (e.g., `${field_name}`) by analyzing the log file's header.
 
 ### Output Location
 
@@ -111,7 +123,7 @@ XXXXXX|command
   - `---X--` → Analysis Choice (1-3)
   - `----X-` → Date Variable (0-1) *(Not implemented yet)*
   - `-----X` → Identifier Variable (0-1) *(Not implemented yet)*
-- `command` → The actual command to be executed.
+- `command` → The actual command to be executed. Use `${field_name}` placeholders for field-aware execution.
 
 ### Example Rules
 
@@ -148,11 +160,14 @@ Lines starting with `//` are ignored:
 
 ### Debug Mode
 
-During execution, the tool displays the **rule generation values** for debugging:
+During execution, the tool displays the **rule generation values** and **field placements** for debugging:
 
 ```
 DEBUG: Rule Code Generation Values
 Log Type: 3, Analysis Choice: 1
+
+Field Placements:
+{'field1': 1, 'field2': 2, ...}
 ```
 
 ### Locating Results

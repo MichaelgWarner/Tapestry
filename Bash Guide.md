@@ -1,26 +1,26 @@
 grep header values for awk
 ```bash
-grep -E 'start_time' combinedlog.csv | awk -F',' '{for (i=1; i<=NF; i++) print i, $i}'
+grep -E 'action' tapestry_logs.csv | awk -F',' '{for (i=1; i<=NF; i++) print i, $i}'
 ```
 
 Regex grep to find time range
 ```bash
-grep -Eo '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' combinedlog.csv | sort | awk 'NR==1{print "Earliest timestamp:", $0} END{print "Latest timestamp:", $0}'
+grep -Eo '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' tapestry_logs.csv | sort | awk 'NR==1{print "Earliest timestamp:", $0} END{print "Latest timestamp:", $0}'
 ```
 
 regex to grep all logs referencing IOC addresses, pipe to print status, dst ip, src ip, time, message, subtype
 ```bash
-grep -E '96\.126\.110\.74|103\.188\.234\.230|144\.48\.80\.122|167\.172\.77\.157|172\.105\.158\.219|198\.167\.193\.[0-9]{1,3}|200\.73\.8\.20' combinedlog.csv | awk -F',' '{print $3, $5, $29, $53, $77, $82}'
+grep -E '96\.126\.110\.74|103\.188\.234\.230|144\.48\.80\.122|167\.172\.77\.157|172\.105\.158\.219|198\.167\.193\.[0-9]{1,3}|200\.73\.8\.20' tapestry_logs.csv | awk -F',' '{print $3, $5, $29, $53, $77, $82}'
 ```
 
 For all traffic involving this server with 2 IP addreses, Awk all src IP, clean src column, exclude private IP's, sort and count occurrences
 ```bash
-grep -E '72\.175\.210\.194|172\.16\.16\.16' combinedlog.csv | awk -F',' '{print $56}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -Ev '^(10\..*|192\.168\..*|172\.(1[6-9]|2[0-9]|3[0-1])\..*)' | sort | uniq -c | sort
+grep -E '72\.175\.210\.194|172\.16\.16\.16' tapestry_logs.csv | awk -F',' '{print $56}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -Ev '^(10\..*|192\.168\..*|172\.(1[6-9]|2[0-9]|3[0-1])\..*)' | sort | uniq -c | sort
 ```
 
 cat wildcard log path in cwd
 ```bash
-cat *.log > combinedlogs.txt
+cat *.log > tapestry_logs.csv
 ```
 
 ```bash
@@ -88,6 +88,33 @@ grep -o 'dst=[^ ]*' "firewall.csv" | cut -d '=' -f 2 | sort | uniq > unique_dst_
 ```
 - **Same process** as the `src` extraction, but this time for `dst=` (destination values).
 
+```bash
+cut [OPTIONS] [FILE]
+```
+- Cut extracts specific parts (fields) of each line from a file or standard input. It is often used for extracting columns from structured text files like CSVs or tab-delimited files.
+```
+-d delimiter	Specifies the delimiter (default is TAB). For CSVs, use -d','.
+-f fields	Specifies which fields (columns) to extract.
+-c characters	Extracts specific character positions.
+--complement	Extracts all fields except the specified ones.
+```
+
+```bash
+cut -d',' -f4 file.csv
+```
+- Extract the 4th column, comma delimited
+
+```bash
+cut -d',' -f4 file.csv | grep -E "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
+```
+- Extract the 4th column, pipe command to remove unwanted data
+
+```bash
+cut -d',' -f1,4 file.csv
+```
+- Extract columns 1 and 4
+- Results remain comma delimited 
+
 REGEX Operators
 ```
 [ ]
@@ -108,3 +135,12 @@ Useful REGEX Samples
 ```
 Match a character, everything except space - zero or more.
 When used inside of a firewall log that formats directionality as `src=192.168.0.1` This ensures that we only capture the value of src= without extra words. You can replace the space with whichever character is used to delimit the line between columns to effectively "select all up to the chosen character"
+
+```
+/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$/
+```
+- This is the regex used to define the ISO 8601 Format for a timestamp
+- YYYY-MM-DD HH:MM:SS
+- Since timestamps are in the format `YYYY-MM-DD HH:MM:SS`, lexicographical (string-based) comparisons in `awk` work correctly.
+- The default `<` and `>` operators in `awk` compare strings lexicographically, which preserves chronological order.
+- It does **not** check for valid dates (e.g., it would accept `2024-13-45 25:61:61` even though it's an invalid date/time).
